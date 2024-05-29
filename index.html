@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.0.0/dist/tf.min.js"></script>
+    <script>
+      //Definir las bandas y géneros musicales
+      const bands = [
+        'Nirvana',
+        'Nine Inch Nails',
+        'Backstreet Boys',
+        'N Sync',
+        'Night Club',
+        'Apashe',
+        'STP',
+      ];
+      const features = [
+        'Grunge',
+        'Rock',
+        'Industrial',
+        'Boy Band',
+        'Dance',
+        'Techno',
+      ];
+
+      //Crear tensores para las votaciones de usuario y las características de las bandas
+      let userVotes = [];
+      let bandFeats = [];
+
+      //Agregar la votación del usuario
+      function addUserVote() {
+        const votes = [];
+        bands.forEach((band, index) => {
+          let vote;
+          while (true) {
+            vote = prompt(`¿Qué calificación le pondrías del 0 al 10 a ${band}?`);
+            if (vote !== null && !isNaN(vote) && vote >= 0 && vote <= 10) {
+              vote = parseInt(vote);
+              break;
+            } else {
+              alert("Por favor, ingresar un número válido entre 0 y 10");
+            }
+          }
+          votes.push(vote);
+        });
+        userVotes.push(votes);
+        updateResults();
+      }
+
+      //Actualizar los resultados
+      function updateResults() {
+        //Convertir los datos del usuario en tensores
+        const userVotesTensor = tf.tensor(userVotes);
+        const userFeats = tf.matMul(userVotesTensor, bandFeats);
+
+        //Encontrar los géneros musicales favoritos del usuario
+        const topUserFeatures = tf.topk(userFeats, features.length);
+        const topGenres = topUserFeatures.indices.arraySync();
+
+        //Mostrar los resultados
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.innerHTML = '';
+
+        topGenres.forEach((genres, i) => {
+          const user = `Usuario ${i + 1}`;
+          const rankedCategories = genres.map((genreIndex) => features[genreIndex]);
+          const rankedScores = topUserFeatures.values.arraySync()[i];
+          const bandsForGenres = genres.map((genreIndex) => {
+            return bands.filter((_, index) => bandFeats.arraySync()[index][genreIndex]);
+          });
+          const userResult = document.createElement('div');
+          userResult.innerHTML = `<p><strong>${user}:</strong></p>`;
+          rankedCategories.forEach((genre, index) => {
+            const bandsString = bandsForGenres[index].join(', ');
+            userResult.innerHTML += `<p>${index + 1}. ${genre} (${rankedScores[index]} puntos): ${bandsString}</p>`;
+          });
+          resultContainer.appendChild(userResult);
+        });
+      }
+
+      //Función principal
+      function main() {
+        //Crear el tensor para las características de las bandas
+        bandFeats = tf.tensor([
+          [1, 1, 0, 0, 0, 0],
+          [1, 0, 1, 0, 0, 0],
+          [0, 0, 0, 1, 1, 0],
+          [0, 0, 0, 1, 0, 0],
+          [0, 0, 1, 0, 0, 1],
+          [0, 0, 1, 0, 0, 1],
+          [1, 1, 0, 0, 0, 0],
+        ]);
+      }
+
+      //Llamar a la función principal
+      main();
+    </script>
+  </head>
+  <body>
+    <h1>Ranking gustos musicales</h1>
+    <button onclick="addUserVote()">Iniciar votación</button>
+    <h2>Resultado</h2>
+    <div id="result-container">
+      <p>Aquí se mostrarán los resultados:</p>
+    </div>
+  </body>
+</html>
